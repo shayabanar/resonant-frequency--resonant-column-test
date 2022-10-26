@@ -1,0 +1,117 @@
+% f1, f2, f3 = start, stop, and step freq.
+% N = number fo cycles
+% r = sampling rate
+
+f1 =20 ;
+f2 = 150;
+df = 0.1;
+N = 10;
+r = 2500;
+
+
+% n = number of frequencies
+n = floor((f2-f1)/df) + 1;
+
+% Matrix A: contains each frequency, number of its related data, and the
+% cumulative number of related data. 
+A = zeros(3,n);
+A(1,1) = f1; 
+A(2,1) = floor(N*r/f1);
+A(3,1) = A(2,1);
+
+for i=2:n
+    A(1,i) = A(1,i-1) + df;
+    A(2,i) = floor(N*r/A(1,i));
+    A(3,i) = A(3,i-1) + A(2,i);
+end
+
+n1 = size(Input_Data,1);
+
+if A(3,n)>n1
+    for j=1:n
+        if A(3,j)>n
+            k = A(3,j);
+            j=n;
+        end
+    end
+end
+
+A(:,k:n) = [];
+    
+% matrix amp: contains the measurments of each sensor at each
+% frequency.(with horizontal format)
+
+amp = zeros(4,size(A,2));
+
+    amp(1,1) = max(Input_Data(1: A(3,1) , 1)) - min(Input_Data(1: A(3,1) , 1));
+    amp(2,1) = max(Input_Data(1: A(3,1) , 2)) - min(Input_Data(1: A(3,1) , 2));
+    amp(3,1) = max(Input_Data(1: A(3,1) , 3)) - min(Input_Data(1: A(3,1) , 3));
+    amp(4,1) = max(Input_Data(1: A(3,1) , 4)) - min(Input_Data(1: A(3,1) , 4));
+    
+    
+i = 2;
+while A(3,i)<n1
+    amp(1,i) = max(Input_Data( A(3,i-1) + 1 : A(3,i) , 1)) - min(Input_Data( A(3,i-1) + 1 : A(3,i) , 1));
+    amp(2,i) = max(Input_Data( A(3,i-1) + 1 : A(3,i) , 2)) - min(Input_Data( A(3,i-1) + 1 : A(3,i) , 2));
+    amp(3,i) = max(Input_Data( A(3,i-1) + 1 : A(3,i) , 3)) - min(Input_Data( A(3,i-1) + 1 : A(3,i) , 3));
+    amp(4,i) = max(Input_Data( A(3,i-1) + 1 : A(3,i) , 4)) - min(Input_Data( A(3,i-1) + 1 : A(3,i) , 4));
+    i = i+1;
+end
+
+% Determining the maximum values
+[val, idx1] = max(amp(1,1:n-1));
+F_res_2g = A(1,idx1)
+Amp_res_2g = val
+
+[val, idx2] = max(amp(2,1:n-1));
+F_res_18g = A(1,idx2)
+Amp_res_18g = val
+
+[val, idx3] = max(amp(3,1:n-1));
+F_res_Torque = A(1,idx3)
+Amp_res_Torque = val
+
+[val, idx4] = max(amp(4,1:n-1));
+F_res_Disp = A(1,idx4)
+Amp_res_Disp = val
+
+a1 = zeros(101,1);
+a2 = zeros(101,1);
+
+
+l = sqrt(2)/2*Amp_res_2g;
+a1 = amp(1, idx1-100:idx1)';
+% b1 = nearestNeigbour(a1, l);
+[F1_delta, F1_ind] = min(abs(a1-l));
+
+a2 = amp(1, idx1:idx1+100)';
+% b2 = nearestNeigbour(a2, l);
+[F2_delta, F2_ind] = min(abs(a2-l));
+
+
+F1 = F_res_2g - (101-F1_ind)*0.1;
+F2 = F_res_2g + (F2_ind-1)*0.1;
+
+
+       
+        
+% Plotting 4 curves
+
+x = zeros(1,n-1);
+x =  A(1,1:n-1);
+
+figure
+subplot(4,1,1); 
+plot(x,amp(1,1:n-1))
+
+subplot(4,1,2); 
+plot(x,amp(2,1:n-1))
+
+subplot(4,1,3); 
+plot(x,amp(3,1:n-1))
+
+subplot(4,1,4); 
+plot(x,amp(4,1:n-1))
+
+Damping = (F2 - F1)/(2 * F_res_2g);
+display(Damping)
